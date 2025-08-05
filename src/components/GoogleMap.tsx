@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
 import { Button } from '@/components/ui/button';
-import { MapPin, Navigation } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { MapPin, Navigation, Search } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -26,6 +27,9 @@ const GoogleMap = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const [searchValue, setSearchValue] = useState<string>('');
+  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [apiKey, setApiKey] = useState<string>('');
 
   // Fetch API key from Supabase Edge Function
@@ -150,6 +154,38 @@ const GoogleMap = ({
       // Initialize with default location address
       getAddressFromCoordinates(defaultLocation);
 
+      // Initialize autocomplete for search input
+      if (searchInputRef.current) {
+        const autocompleteInstance = new google.maps.places.Autocomplete(searchInputRef.current, {
+          fields: ['place_id', 'geometry', 'name', 'formatted_address'],
+          types: ['address']
+        });
+
+        autocompleteInstance.addListener('place_changed', () => {
+          const place = autocompleteInstance.getPlace();
+          if (place.geometry?.location) {
+            const location = {
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng()
+            };
+            
+            mapInstance.setCenter(location);
+            mapInstance.setZoom(15);
+            markerInstance.setPosition(location);
+            
+            const address = place.formatted_address || place.name || '';
+            setSelectedLocation(address);
+            setSearchValue(address);
+            onLocationSelect?.({
+              ...location,
+              address: address
+            });
+          }
+        });
+
+        setAutocomplete(autocompleteInstance);
+      }
+
       setMap(mapInstance);
       setMarker(markerInstance);
       setIsLoaded(true);
@@ -248,6 +284,19 @@ const GoogleMap = ({
           <Navigation className="h-4 w-4" />
           Use Current Location
         </Button>
+      </div>
+      
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          ref={searchInputRef}
+          type="text"
+          placeholder="Search for an address..."
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          className="pl-10"
+        />
       </div>
       
       <div 
