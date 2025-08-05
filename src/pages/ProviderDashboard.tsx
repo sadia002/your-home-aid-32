@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Edit, Trash2, DollarSign, Users, Star, Search } from "lucide-react";
 import Header from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
+import GoogleMap from "@/components/GoogleMap";
 
 const ProviderDashboard = () => {
   const { toast } = useToast();
@@ -58,7 +59,8 @@ const ProviderDashboard = () => {
     price: "",
     description: "",
     duration: "",
-    area: ""
+    area: "",
+    location: { lat: 0, lng: 0, address: "" }
   });
 
   const categories = [
@@ -103,7 +105,8 @@ const ProviderDashboard = () => {
         price: "",
         description: "",
         duration: "",
-        area: ""
+        area: "",
+        location: { lat: 0, lng: 0, address: "" }
       });
       toast({
         title: "Service Added!",
@@ -240,6 +243,16 @@ const ProviderDashboard = () => {
                 value={newService.description}
                 onChange={(e) => setNewService({...newService, description: e.target.value})}
               />
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">Service Location</label>
+                <GoogleMap
+                  height="200px"
+                  onLocationSelect={(location) => 
+                    setNewService({...newService, location, area: location.address})
+                  }
+                />
+              </div>
               
               <Button onClick={addService} className="w-full">
                 Add Service
